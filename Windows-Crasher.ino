@@ -1,3 +1,6 @@
+// Copywite of dsxz19-2, 2021
+// This is for fun only do not use this on anyones device that you don't have permision to use on
+
 #include "DigiKeyboard.h"
 void setup() {
 }
