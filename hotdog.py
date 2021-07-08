@@ -1,3 +1,4 @@
+# Inspiered by Daren Kitchen Hotdog-wallpaper payload
 # Converted using ducky2python by CedArctic (https://github.com/CedArctic/ducky2python) 
 import pyautogui
 import time
