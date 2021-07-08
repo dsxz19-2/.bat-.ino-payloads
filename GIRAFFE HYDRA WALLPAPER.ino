@@ -1,3 +1,5 @@
+// inspierd by daren kitchen at hak5
+
 #include "DigiKeyboard.h"
 void setup() {
 }
